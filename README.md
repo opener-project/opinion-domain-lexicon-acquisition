@@ -1,4 +1,4 @@
-#opinion-domain-lexicon-acquisition#
+#Acquisition of expressions and targets lexicons from a domain#
 
 
 This toolkit allows to generate domain specific lexicons:
@@ -54,10 +54,10 @@ The script also prints the lexicons on the standard output in a more user readab
 information on the error output. One example of usage of this program would be:
 
 ```shell
-acquire_from_annotated_data.py -f ~/data/opinion_annotations_en/kaf/hotel -exp_csv my_expressions.csv -tar_csv my_targets.csv > log.out 2> log.err
+acquire_from_annotated_data.py -f ~/data/hotel -exp_csv my_expressions.csv -tar_csv my_targets.csv > log.out 2> log.err
 ```
 
-This would store the output in the file log.out, the debugging information in the file log.err, and the resulting
+This would read all the KAF/NAF files in the folder ~/data/hole and store the output in the file log.out, the debugging information in the file log.err, and the resulting
 lexicons in CSV format on the files my_expressions.csv and my_targets.csv respectively.
 
 ##Unsupervised Acquisition##
