@@ -10,7 +10,9 @@ from collections import defaultdict, Counter
 from operator import itemgetter
 from KafNafParserPy import KafNafParser
 
-VERSION='0.1'
+VERSION='0.2'
+## 0.2 --> included aspects from property layer in the target list
+
 __extensions_allowed__ = ['kaf','naf']  # Set it to None to get all the files within the folder
 EXP = 'expression'
 TAR = 'target'
@@ -68,6 +70,16 @@ def process_file(this_file,token_freq):
             pos_for_wid[wid] = term.get_pos()
         
     
+    ##Properties!
+    aspects = [] ## [(label,term_span)...]
+    
+    for property in xml_obj.get_properties():
+        for refs in property.get_references():
+            for span in refs:
+                aspects.append((property.get_type(),span.get_span_ids()))
+       
+    
+    
     already_counted = {EXP:set(), TAR:set()}
     
     for opinion in xml_obj.get_opinions():   
@@ -91,7 +103,19 @@ def process_file(this_file,token_freq):
                             polarity = (opinion_obj.get_polarity()).lower()
                             opinion_expressions.append((opinion_tokens,polarity,opinion_lemmas,opinion_pos))
                         else:
-                            opinion_targets.append((opinion_tokens,opinion_lemmas,opinion_pos))
+                            ##Calculate the aspect type
+                            possible_aspects = []
+                            target_ids = span.get_span_ids()
+                            for aspect_label, aspect_span in aspects:
+                                num_in_common = len(set(target_ids) & set(aspect_span))
+                                if num_in_common != 0:
+                                    possible_aspects.append((aspect_label,num_in_common,len(aspect_span)))
+                            aspect_for_target = 'unknown'
+
+                            if len(possible_aspects) != 0:
+                                ##Sorting by the number in common first, and by the lengtgh of the aspect secondly
+                                aspect_for_target = sorted(possible_aspects,key=lambda t: (t[1],t[2]), reverse=True)[0][0]
+                            opinion_targets.append((opinion_tokens,aspect_for_target, opinion_lemmas,opinion_pos))
                         already_counted[this_type].add(string_wids)    
       
     del xml_obj
@@ -189,22 +213,24 @@ if __name__ == '__main__':
     lemmas_for_tokens_tar   = defaultdict(list)
     pos_for_tokens_tar      = defaultdict(list)
      
-    for tokens, lemmas, postags in all_targets:
-        distrib_targets[tokens] += 1
+    for tokens, aspect, lemmas, postags in all_targets:
+        this_key = tokens+'#'+aspect
+        distrib_targets[this_key] += 1
         lemmas_for_tokens_tar[tokens].append(lemmas)
         pos_for_tokens_tar[tokens].append(postags)
-        
+     
 
     print>>sys.stderr,'Total unique number of targets:', len(distrib_targets)
 
     final_targets = []
-    for target, rel_freq in distrib_targets.items():
+    for target_aspect, rel_freq in distrib_targets.items():
+        target = target_aspect[:target_aspect.rfind('#')]
         this_over_freq = sum(text.count(' '+target+' ') for text in all_texts)
         if this_over_freq < rel_freq: ## This is one of the errors where the expression is not continuos in the text
             print>>sys.stderr,'Error target not continuous:',target.encode('utf-8'),' Not included in output'
         else:
             ratio = rel_freq/this_over_freq
-            final_targets.append((target,rel_freq,this_over_freq,ratio))
+            final_targets.append((target_aspect,target,rel_freq,this_over_freq,ratio))
         
     print
     print 'TARGETS'
@@ -213,11 +239,11 @@ if __name__ == '__main__':
     # 2 ratio 
     # 3 relative frequency
     target_writer = csv.writer(arguments.tar_csv_fd,delimiter=';', quoting=csv.QUOTE_ALL)
-    labels = ['target','ratio','RelatFreq','OverallFreq','lemmas','postags','FreqWords']
+    labels = ['target#aspect','ratio','RelatFreq','OverallFreq','lemmas','postags','FreqWords']
     target_writer.writerow(labels)
-    for target, rel_freq,this_over_freq,ratio in sorted(final_targets,key=lambda t: (-len(t[0].split()),t[3],t[1],),reverse=1):
+    for target_aspect, target, rel_freq,this_over_freq,ratio in sorted(final_targets,key=lambda t: (-len(t[1].split()),t[4],t[2],),reverse=1):
         this_row = []
-        this_row.append(target.encode('utf-8'))
+        this_row.append(target_aspect.encode('utf-8'))
         this_row.append(ratio)
         this_row.append(rel_freq)
         this_row.append(this_over_freq)
@@ -227,7 +253,7 @@ if __name__ == '__main__':
         this_row.append(my_str)                             
         target_writer.writerow(this_row)
         
-        print 'Target:', target.encode('utf-8')
+        print 'Target:', target_aspect.encode('utf-8')
         print '  lemmas:',(Counter(lemmas_for_tokens_tar[target]).most_common()[0][0]).encode('utf-8')
         print '  pos:',(Counter(pos_for_tokens_tar[target]).most_common()[0][0]).encode('utf-8')
         print '  rel ',rel_freq

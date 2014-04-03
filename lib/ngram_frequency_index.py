@@ -18,7 +18,6 @@ class Cngram_index_creator:
         self.punctuation = []
         self.convert_to_lowercase = False
         self.datafile_for_ngram = {}
-        self.datafile_for_ngram_subset = {}
         self.max_ngram_len = 1
         self.min_ngram_len = 1
         self.input_file_list = None
@@ -26,6 +25,7 @@ class Cngram_index_creator:
         self.remove_out_if_exists = True
         self.include_sentence_delimiters = True
         self.min_freq_for_ngram = 1
+        self.langs = defaultdict(int)
         
     def set_min_freq_for_ngram(self,m):
         self.min_freq_for_ngram = m
@@ -68,17 +68,11 @@ class Cngram_index_creator:
             self.load_input_files_from_file(self.input_file_list)
     ## END LOADER FILES
             
-    def get_file_desc_for_ngram(self,n,subset=False):
-        if not subset:
-            datafile = self.datafile_for_ngram
-            suffix = ''
-        else:
-            datafile = self.datafile_for_ngram_subset
-            suffix = '.subset'
-            
+    def get_file_desc_for_ngram(self,n):
+           
         n= str(n)
-        if n in datafile:
-            filengram, fileidx, filedesc = datafile[str(n)]
+        if n in self.datafile_for_ngram:
+            filengram, fileidx, filedesc = self.datafile_for_ngram[str(n)]
         else:
             my_ngram_name = 'ngrams.len_%s.txt' % n
             filengram = os.path.join(self.out_folder,my_ngram_name)
@@ -87,7 +81,7 @@ class Cngram_index_creator:
             fileidx = os.path.join(self.out_folder,my_idx_name)
              
             filedesc = open(filengram,'w')
-            datafile[n] = (filengram,fileidx,filedesc)
+            self.datafile_for_ngram[n] = (filengram,fileidx,filedesc)
         return filedesc
     
     
@@ -102,6 +96,7 @@ class Cngram_index_creator:
 
 
         print>>sys.stderr,'Processing file', os.path.basename(file), 'Type:',xml_obj.get_type()
+        self.langs[xml_obj.get_language()] += 1
         sentences = []
         current_sent = []
         this_sent = None
@@ -162,24 +157,18 @@ class Cngram_index_creator:
             filedesc.close()
             print>>sys.stderr,' ... OK'
             
-        for ngramlen, datafile in self.datafile_for_ngram_subset.items():
-            filengram, _ , filedesc = datafile
-            print>>sys.stderr,'Closing file subset ',filengram,
-            filedesc.close()
-            print>>sys.stderr,' ... OK'
             
-            
-    def create_indexes(self,subset=False):
-        if not subset:
-            datafile = self.datafile_for_ngram
-            suffix = ''
-        else:
-            datafile = self.datafile_for_ngram_subset
-            suffix = '.subset'
+    def create_indexes(self):
         
-        metadata = open(os.path.join(self.out_folder,METADATA+suffix),'w')
+        metadata = open(os.path.join(self.out_folder,METADATA),'w')
+        sorted_langs = sorted(self.langs.items(),key=lambda t: t[1], reverse=True)
         
-        for ngramlen, datafile in datafile.items():
+        metadata.write('language %s\n' % sorted_langs[0][0])
+        for p in sorted_langs:
+            metadata.write('lang %s:%d ' % p)
+        metadata.write('\n')
+        
+        for ngramlen, datafile in self.datafile_for_ngram.items():
             filengram, fileidx, _ = datafile
             metadata.write('%s %s %s\n' %(ngramlen,os.path.basename(filengram),os.path.basename(fileidx)))
             
@@ -229,8 +218,6 @@ class Cngram_index_creator:
         # Create the indexes
         self.create_indexes()
         
-        if len(self.datafile_for_ngram_subset) != 0: ## if there are data files created
-            self.create_indexes(subset=True)
         
 class Citem:
     def __init__(self,line,with_pos=False):
@@ -314,9 +301,12 @@ class Cngram_index_enquirer:
     def __init__(self,folder):
         self.folder = folder
         self.datafiles_for_ngram_len = {}
-        
+        self.most_frequent_lang = ''
         self.load_datafiles()
         
+    def get_language(self):
+        return self.most_frequent_lang
+    
     def load_datafiles(self):
         metadata = os.path.join(self.folder,METADATA)
         if not os.path.exists(metadata):
@@ -324,6 +314,9 @@ class Cngram_index_enquirer:
             print>>sys.stderr,'Are you sure the folder is a correct ngram index folder ?'
             sys.exit(-1)
         fic = open(metadata,'r')
+        line_lang = fic.readline()
+        self.most_frequent_lang = line_lang.strip().split()[1]
+        line_distro_langs = fic.readline()
         for line in fic:
             ngramlen, filengram, fileidx = line.rstrip().split(' ')
             filengram = os.path.join(self.folder,filengram)
