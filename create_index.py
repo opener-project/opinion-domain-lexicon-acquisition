@@ -27,7 +27,7 @@ if __name__ == '__main__':
     argument_parser.add_argument('-min_freq', dest='min_freq', type=int, default=1, metavar='integer (default 1)', help='Minimum frequency allowed for ngram')
 
    
-    my_args = sys.argv[1:] + ['-output','raw_hotel_reviews_nl_pos_500new','-input_file','/home/izquierdo/data/large_raw_reviews/hotel_reviews_nl.pos.500.list']
+    my_args = sys.argv[1:] #+ ['-output','raw_hotel_reviews_nl_pos_500new','-input_file','/home/izquierdo/data/large_raw_reviews/hotel_reviews_nl.pos.500.list']
     arguments = argument_parser.parse_args(my_args)
 
 

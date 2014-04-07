@@ -3,6 +3,8 @@ import os
 import shutil
 import math
 import re
+import hashlib
+import cPickle
 
 from collections import defaultdict
 from operator import itemgetter
@@ -303,6 +305,20 @@ class Cngram_index_enquirer:
         self.datafiles_for_ngram_len = {}
         self.most_frequent_lang = ''
         self.load_datafiles()
+        self.use_cache = True
+        self.subfolder_cached_results = 'cached_results'
+        
+        if self.use_cache:
+            if not os.path.exists(os.path.join(self.folder,self.subfolder_cached_results)):
+                os.mkdir(os.path.join(self.folder,self.subfolder_cached_results))
+            
+        
+        
+    def get_cached_name(self,query,only_match):
+        my_str = "%s_%s" % (query, only_match)
+        key = hashlib.sha256(my_str).hexdigest()
+        complete_name = os.path.join(self.folder, self.subfolder_cached_results,key)
+        return complete_name
         
     def get_language(self):
         return self.most_frequent_lang
@@ -372,14 +388,27 @@ class Cngram_index_enquirer:
             
         
     def query(self,querystr, only_match=False):
-        ngramlen, custom_query = self.convert_querystr(querystr)
-        if str(ngramlen) in self.datafiles_for_ngram_len:
-            fileidx = self.datafiles_for_ngram_len[str(ngramlen)][1]    #filngram, fileidx
-            items = self.run_grep(custom_query, fileidx,only_match,querystr)
-            return items
+        items = None
+        cached_name = self.get_cached_name(querystr,only_match)
+        if self.use_cache and os.path.exists(cached_name):
+            ##The results is cached
+            fd = open(cached_name,'rb')
+            items = cPickle.load(fd)
+            fd.close()
+            
         else:
-            print>>sys.stderr,'Query ',querystr,'is a '+str(ngramlen)+'-gram and there is no index for that size'
-            return None
+            ngramlen, custom_query = self.convert_querystr(querystr)
+            if str(ngramlen) in self.datafiles_for_ngram_len:
+                fileidx = self.datafiles_for_ngram_len[str(ngramlen)][1]    #filngram, fileidx
+                items = self.run_grep(custom_query, fileidx,only_match,querystr)
+                if self.use_cache:
+                    ##Save the results
+                    fd = open(cached_name,'wb')
+                    cPickle.dump(items,fd)
+                    fd.close()
+            else:
+                print>>sys.stderr,'Query ',querystr,'is a '+str(ngramlen)+'-gram and there is no index for that size'
+        return items
                             
 class Cconstrastive_analyser:
     def __init__(self,folder):
