@@ -1,0 +1,7 @@
+# Seed list file. One seed per line with the format:
+# seed type
+# where type can be only + or - for defining positive or negative seeds
+good +
+bad -
+nice +
+ugly -

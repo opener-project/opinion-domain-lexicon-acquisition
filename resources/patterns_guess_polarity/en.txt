@@ -1,0 +1,8 @@
+# This file contains expressions to guess the polarity of new words
+# Format: type pattern
+# type: = A and B have the same polarity  ! opposite polarity
+= [A] and [B]
+= [A] , [B]
+= [A] and very [B]
+! [A] but [B]
+! [A] , but [B]
