@@ -316,7 +316,8 @@ class Cngram_index_enquirer:
         
     def get_cached_name(self,query,only_match):
         my_str = "%s_%s" % (query, only_match)
-        key = hashlib.sha256(my_str).hexdigest()
+        #key = hashlib.sha256(my_str).hexdigest()
+        key = hashlib.sha256(my_str.encode('utf-8')).hexdigest()
         complete_name = os.path.join(self.folder, self.subfolder_cached_results,key)
         return complete_name
         
