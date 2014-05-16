@@ -84,6 +84,8 @@ def process_file(this_file,token_freq):
     
     for opinion in xml_obj.get_opinions():   
         for this_type, opinion_obj in [(EXP,opinion.get_expression()),(TAR,opinion.get_target())]:
+            if this_type is EXP and opinion_obj.get_polarity()=='NON-OPINIONATED':
+                continue
             if opinion_obj is not None:
                 span = opinion_obj.get_span()
                 if span is not None:
