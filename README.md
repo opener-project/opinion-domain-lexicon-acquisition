@@ -212,6 +212,11 @@ and the examples files provided for English, you should run:
 acquire_from_raw_data.py -index my_indexes -seeds resources/seeds/en.txt -patterns resources/patterns/en.txt -p_pol resources/patterns_guess_polarity/en.txt
 ````
 
+##Installation##
+The only requirement of this toolkit is to have installed the KafNafParserPy, which can be found at https://github.com/opener-project/KafNafParserPy
+Then you need only to make sure the KafNafParserPy library is on the Python path and clone this repository.
+
+
 ##Contact##
 * Ruben Izquierdo
 * Vrije University of Amsterdam
