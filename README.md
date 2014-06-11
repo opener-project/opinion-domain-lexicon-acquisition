@@ -3,6 +3,7 @@
 
 This toolkit allows to generate domain specific lexicons:
 * Polarity or expression lexicons: lexicons with words in the specific domain used to state opinions
+* Lexicons of ngrams strongly associated with a certain rating 
 * Target or property lexicons: lexicons with expressions that represent properties of the entities
 represented in the given domain (for a hotel review domain, these properties could be the rooms, the staff
 or the ambience). 
@@ -59,6 +60,7 @@ acquire_from_annotated_data.py -f ~/data/hotel -exp_csv my_expressions.csv -tar_
 
 This would read all the KAF/NAF files in the folder ~/data/hole and store the output in the file log.out, the debugging information in the file log.err, and the resulting
 lexicons in CSV format on the files my_expressions.csv and my_targets.csv respectively.
+
 
 ##Unsupervised Acquisition##
 
@@ -211,6 +213,44 @@ and the examples files provided for English, you should run:
 ````shell
 acquire_from_raw_data.py -index my_indexes -seeds resources/seeds/en.txt -patterns resources/patterns/en.txt -p_pol resources/patterns_guess_polarity/en.txt
 ````
+
+##Unsupervised Acquisition from reviews with star rating##
+
+This module implements a basic heuristic to extract words associated more strongly
+with one kind of star rating.
+
+For the data preparation, you will need to to generate indexes (you can use the
+ script generate_indexex.py), and one index must be built for each star rating. The folder structure must follow this schema:
+```shell
+ls -1 english_rating_indexes/
+index_rating_2
+index_rating_3
+index_rating_4
+index_rating_5
+```
+
+It is important to keep the star rating as the end of the name of the index folders, after the
+underscore. The rest of the name is not relevant.
+
+To run the program you should call to the script passing the name of the folder where the
+indexes are stored:
+
+```shell
+acquire_from_ratings.py english_rating_indexes > log.out 2> log.err
+```
+
+It will generate three CSV files, one per ngram len. So, the lexicon generated for
+trigrams will be `lexicon_len3.csv`, and one example line could be:
+```shell
+definitely be returning;5;2.02;5=-10.9 4=-14.94
+```
+
+The first field is the actual word or ngram, the second field is the star rating
+most strongly associated with this word and the third is the standard deviation of the
+values of association of the words with each rating (the lexicon is sorted according
+to this value). The last field are the values of association of the ngram with each
+star rating.
+
 
 ##Installation##
 The only requirement of this toolkit is to have installed the KafNafParserPy, which can be found at https://github.com/opener-project/KafNafParserPy
