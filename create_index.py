@@ -42,7 +42,8 @@ if __name__ == '__main__':
     elif arguments.input_folder:
         ##TO be implemented
         pass
-        
+        print>>sys.stderr,'Not yet implemented'
+            
     if os.path.isabs(arguments.out_folder):
         index_creator.set_out_folder(arguments.out_folder)
     else:

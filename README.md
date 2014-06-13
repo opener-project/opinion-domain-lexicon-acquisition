@@ -171,7 +171,8 @@ Once you have these three list ready and the index created, you can run the lexi
 acquire_from_raw_data.py -h
 usage: acquire_from_raw_data.py [-h] -index index_folder -seeds
                                 file_with_seeds -patterns file_with_patterns
-                                -p_pol file_with_patterns [-lang, lang_code]
+                                -p_pol file_with_patterns -lex_pol pol_lex
+                                -lex_tar pol_tar [-lang, lang_code]
                                 [-no_verbose] [-min_freq integer]
                                 [-target_pos list of tags "N R G"]
                                 [-expression_pos list of tags "N R G"]
@@ -205,13 +206,36 @@ Required arguments:
   -p_pol file_with_patterns
                         File with patterns for guessing the polarity, one per
                         line (example-> "# [A] and [B]")
+  -lex_pol pol_lex      File to store the POLARITY lexicon
+  -lex_tar pol_tar      File to store the TARGET lexicon
 ````
 
-The required parameters are the folder where we stored our indexes and the three lists of seeds and patterns. The rest of parameters are optional, and the values
+The required parameters are the folder where we stored our indexes and the three lists of seeds and patterns. Also the names for the output CSV files
+are required. The rest of parameters are optional, and the values
 used by default if they are not specified can be seen in the help output of the script. If you want to create the lexicons using the indexes stored in my_indexes
 and the examples files provided for English, you should run:
 ````shell
-acquire_from_raw_data.py -index my_indexes -seeds resources/seeds/en.txt -patterns resources/patterns/en.txt -p_pol resources/patterns_guess_polarity/en.txt
+acquire_from_raw_data.py -index my_indexes -seeds resources/seeds/en.txt -patterns resources/patterns/en.txt -p_pol resources/patterns_guess_polarity/en.txt -lex_pol my_polarities.csv -lex_tar my_targets.csv
+````
+
+The output are 2 lexicon in CSV format with one line per word. For instance this in example of the polarity lexicon generated using Dutch data:
+````shell
+expression;polarity;overall_confidence;avg_confidence
+goede;positive;40.7531891834;1.23494512677
+prima;positive;37.0588988223;0.95022817493
+leuke;positive;28.7255701655;1.14902280662
+````
+
+There are 4 fields. The first one is the expression, the second one is the guessed polarity, the third one is the overall confidence for that word and the last one
+is the average confidence over all the patterns that match with the word.
+
+In the case of the targets, the fields are the same except the polarity type, which does not apply for targets. This is an example:
+````shell
+target;overall_confidence;avg_confidence
+hotel;55.264445494;0.87721342054
+kamer;32.6183972529;0.741327210293
+locatie;27.2989131741;1.18690926844
+plek;24.7961318524;1.12709690238
 ````
 
 ##Unsupervised Acquisition from reviews with star rating##

@@ -6,6 +6,7 @@ import math
 import string
 import os
 import argparse
+import csv
 
 from collections import defaultdict
 from lib.ngram_frequency_index import Cngram_index_enquirer
@@ -139,8 +140,9 @@ if __name__ == '__main__':
     required.add_argument('-seeds','-s',dest='seed_fd', metavar='file_with_seeds', type= argparse.FileType('rb'), help='File with seeds, one per line', required=True)
     required.add_argument('-patterns','-p',dest='patterns_fd', metavar='file_with_patterns', type= argparse.FileType('rb'), help='File with patterns, one per line (example-> "a [Exp] [Tar]")', required=True)
     required.add_argument('-p_pol',dest='patterns_pol_guess_fd', metavar='file_with_patterns', type= argparse.FileType('rb'), help='File with patterns for guessing the polarity, one per line (example-> "# [A] and [B]")', required=True)
-
-    
+    required.add_argument('-lex_pol',dest='lexpol_fd', metavar='pol_lex', type= argparse.FileType('wb'), help='File to store the POLARITY lexicon', required=True)
+    required.add_argument('-lex_tar',dest='lextar_fd', metavar='pol_tar', type= argparse.FileType('wb'), help='File to store the TARGET lexicon', required=True)
+     
     argument_parser.add_argument('-lang,','-l', dest='lang', metavar="lang_code", help='Force to use this lang, otherwise the language from the indexs is used')
     argument_parser.add_argument('-no_verbose', dest='verbose', action='store_false', help='No verbose log information')
     argument_parser.add_argument('-min_freq','-mf', dest='min_freq', type=int,default=1,metavar='integer',help='Minimum frequency allowed for a query (default 1)')
@@ -329,14 +331,21 @@ if __name__ == '__main__':
             break
         
         num_iter += 1
-        
-    
+
+    polarity_writer = csv.writer(arguments.lexpol_fd, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    this_row = ['expression','polarity','overall_confidence','avg_confidence']
+    polarity_writer.writerow(this_row)
+    target_writer = csv.writer(arguments.lextar_fd, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    this_row = ['target','overall_confidence','avg_confidence']
+    target_writer.writerow(this_row)
+   
     #######
     print '#'*50
     print 'FINAL LEXICONS'
     print '  EXPRESSIONS'
     #Value is a triple
     for n, (exp, values) in enumerate(sorted(all_expressions.items(),key=lambda pair: sum(v for _,_,v in pair[1]), reverse=True)):
+        this_row = []
         total_values = 0
         count_idx_pattern = defaultdict(int)
 
@@ -344,15 +353,20 @@ if __name__ == '__main__':
             total_values += val
             count_idx_pattern[idx_pattern] += 1
             
+        this_row.append( exp.encode('utf-8'))
         print '\t','exp_'+str(n), exp.encode('utf-8')
         polarity = guess_polarity(enquirer, exp, seeds, patterns_polarity_guessing,arguments.verbose or True) 
         print '\t   Guessed polarity:',polarity
+        this_row.append(polarity)
         print '\t   Total values:',len(values)
         print '\t   Sum values (sorted by this):',total_values
+        this_row.append(str(total_values))
         print '\t   Avg total freq',total_values*1.0/len(values)
+        this_row.append(str(total_values*1.0/len(values)))
         for idx,cnt in sorted(count_idx_pattern.items(),key=lambda t: -t[1]):
             print '\t    ', patterns[idx], cnt
         sys.stdout.flush()
+        polarity_writer.writerow(this_row)
         #for num_iter, pattern, val in values:
         #    print '\t    iternum:',num_iter,' pattern:',pattern
             
@@ -364,17 +378,28 @@ if __name__ == '__main__':
         for num_iter, idx_pattern, val in values:
             total_values += val
             count_idx_pattern[idx_pattern] += 1
+        this_row = [tar.encode('utf-8')]
         print '\t','tar'+str(n), tar.encode('utf-8')
         print '\t   Total values:',len(values)
         print '\t   Sum values (sorted by this):',total_values
+        this_row.append(str(total_values))
         print '\t   Avg total freq',total_values*1.0/len(values)
+        this_row.append(str(total_values*1.0/len(values)))
         for idx,cnt in sorted(count_idx_pattern.items(),key=lambda t: -t[1]):
             print '\t    ', patterns[idx], cnt
         #for num_iter, pattern, val in values:
         #    print '\t    iternum:',num_iter,' pattern:',pattern
+        target_writer.writerow(this_row)
+
     print '#'*50   
         
-
+    arguments.seed_fd.close()
+    arguments.lexpol_fd.close()
+    arguments.lextar_fd.close()
+    print 'CSV OUTPUT LEXICONS:'
+    print '\tPolarity lexicon:',arguments.lexpol_fd.name
+    print '\tTarget lexicon:',arguments.lextar_fd.name
+    
     sys.exit(0)
         
   

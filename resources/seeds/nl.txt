@@ -1,14 +1,14 @@
-goed
-goede
-slecht
-slechte
-leuk
-leuke
-afschuwelijk
-afschuwelijke
-vriendelijk
-onvriendelijke
-lekker
-lekkere
-vies
-vieze
+goed +
+goede +
+slecht -
+slechte -
+leuk +
+leuke +
+afschuwelijk -
+afschuwelijke -
+vriendelijk +
+onvriendelijke -
+lekker +
+lekkere +
+vies -
+vieze -

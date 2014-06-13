@@ -163,6 +163,7 @@ class Cngram_index_creator:
     def create_indexes(self):
         
         metadata = open(os.path.join(self.out_folder,METADATA),'w')
+        print self.langs
         sorted_langs = sorted(self.langs.items(),key=lambda t: t[1], reverse=True)
         
         metadata.write('language %s\n' % sorted_langs[0][0])
